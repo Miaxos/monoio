@@ -35,11 +35,11 @@ use std::future::Future;
 #[cfg(feature = "sync")]
 pub use blocking::spawn_blocking;
 pub use builder::{Buildable, RuntimeBuilder};
-pub use driver::Driver;
 #[cfg(all(target_os = "linux", feature = "iouring"))]
 pub use driver::IoUringDriver;
 #[cfg(all(unix, feature = "legacy"))]
 pub use driver::LegacyDriver;
+pub use driver::{shared_fd::SharedFd, Driver};
 #[cfg(feature = "macros")]
 pub use monoio_macros::{main, test, test_all};
 pub use runtime::{spawn, Runtime};

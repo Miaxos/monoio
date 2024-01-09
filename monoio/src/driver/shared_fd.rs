@@ -8,10 +8,10 @@ use std::{cell::UnsafeCell, io, rc::Rc};
 use super::legacy::iocp::SocketState;
 use super::CURRENT;
 
-// Tracks in-flight operations on a file descriptor. Ensures all in-flight
-// operations complete before submitting the close.
+/// Tracks in-flight operations on a file descriptor. Ensures all in-flight
+/// operations complete before submitting the close.
 #[derive(Clone, Debug)]
-pub(crate) struct SharedFd {
+pub struct SharedFd {
     inner: Rc<Inner>,
 }
 
@@ -70,9 +70,12 @@ impl AsRawSocket for SharedFd {
 }
 
 impl SharedFd {
+    /// An owned file descriptor which is shareable in the same thread.
+    ///
+    /// The file descriptor will be closed when every reference of this file descriptor is dropped
+    /// in the thread.
     #[cfg(unix)]
-    #[allow(unreachable_code, unused)]
-    pub(crate) fn new(fd: RawFd) -> io::Result<SharedFd> {
+    pub fn new(fd: RawFd) -> io::Result<SharedFd> {
         #[cfg(all(unix, feature = "legacy"))]
         const RW_INTERESTS: mio::Interest = mio::Interest::READABLE.add(mio::Interest::WRITABLE);
 
@@ -127,6 +130,10 @@ impl SharedFd {
         })
     }
 
+    /// An owned file descriptor which is shareable in the same thread.
+    ///
+    /// The file descriptor will be closed when every reference of this file descriptor is dropped
+    /// in the thread.
     #[cfg(windows)]
     pub(crate) fn new(fd: RawSocket) -> io::Result<SharedFd> {
         const RW_INTERESTS: mio::Interest = mio::Interest::READABLE.add(mio::Interest::WRITABLE);
@@ -207,7 +214,7 @@ impl SharedFd {
     #[cfg(unix)]
     /// Try unwrap Rc, then deregister if registered and return rawfd.
     /// Note: this action will consume self and return rawfd without closing it.
-    pub(crate) fn try_unwrap(self) -> Result<RawFd, Self> {
+    pub fn try_unwrap(self) -> Result<RawFd, Self> {
         use std::mem::{ManuallyDrop, MaybeUninit};
 
         let fd = self.inner.fd;
@@ -257,7 +264,7 @@ impl SharedFd {
     #[cfg(windows)]
     /// Try unwrap Rc, then deregister if registered and return rawfd.
     /// Note: this action will consume self and return rawfd without closing it.
-    pub(crate) fn try_unwrap(self) -> Result<RawSocket, Self> {
+    pub fn try_unwrap(self) -> Result<RawSocket, Self> {
         let fd = self.inner.fd;
         match Rc::try_unwrap(self.inner) {
             Ok(_inner) => {
